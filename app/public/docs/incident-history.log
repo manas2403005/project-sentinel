@@ -1,0 +1,10 @@
+# Incident History Log
+
+## Format
+- Timestamp | Incident Type | Fix Applied | Result | Notes
+
+## History
+(Add incidents here as they occur - check before applying fixes!)2026-05-08T20:56:46.279Z | sms-service | missing-dependency | APPLIED | Removed random line from package.json
+2026-05-08T21:00:06.962Z | sms-service | syntax-error | APPLIED | Added invalid character to index.ts
+2026-05-09T02:35:11.326Z | sms-service | syntax-error | FIXED | Removed @@INVALID@@ from index.ts
+2026-05-09T02:35:11.327Z | sms-service | missing-dependency | FIXED | Re-added express to dependencies
