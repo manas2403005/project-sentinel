@@ -6,7 +6,7 @@ const app = express();
 const PORT = 3001;
 const SERVICE_ID = 'sms-service';
 
-const DB_PATH = path.join(__dirname, '..', '..', 'docs', 'sentinel.db');
+const DB_PATH = path.join(__dirname, '..', '..', '..', 'docs', 'sentinel.db');
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');

@@ -4,15 +4,20 @@
   "type": "module",
   "description": "Autonomous incident resolution system",
   "scripts": {
-    "start:all": "concurrently \"npm run start:services\" \"npm run start:app\"",
+    "start:all": "concurrently \"npm run start:services\" \"npm run start:app\" \"npm run start:agent\"",
     "start:services": "cd services/sms-service && npm run dev & cd services/payment-service && npm run dev",
     "start:app": "cd app && npm run dev",
+    "start:agent": "ts-node scripts/sentinel-agent.ts",
     "chaos": "ts-node scripts/chaos-monkey.ts",
-    "test": "echo \"No tests configured yet\""
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js \"services\"",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/jest": "^29.5.14",
     "concurrently": "^8.2.2",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.2"
   },
