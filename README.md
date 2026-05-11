@@ -132,6 +132,18 @@ Tests:       8 passed, 8 total
 | SMS Service | Health endpoint, Express dependency, TypeScript compilation |
 | Payment Service | Health endpoint, Express dependency, TypeScript compilation |
 
+### Chaos Monkey Test Results (May 11, 2026)
+
+| Metric | Value |
+|--------|-------|
+| Total Incidents Injected | 5 |
+| Detection Rate | 100% |
+| Auto-Resolution Rate | 20% |
+| Mean Time To Detect | < 5 seconds |
+| Mean Time To Resolve | 3 minutes |
+
+**Key Finding:** System successfully auto-healed dependency issues. Logic-level bugs require enhanced capabilities.
+
 ---
 
 ## Project Structure
@@ -142,7 +154,8 @@ project-sentinel/
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── incidents/        # Incident API routes
-│   │   │   └── agent-status/     # Agent status endpoints
+│   │   │   ├── agent-status/     # Agent status endpoints
+│   │   │   └── services/         # Services API routes
 │   │   ├── page.tsx              # Main dashboard page
 │   │   └── layout.tsx            # App layout
 │   ├── package.json
@@ -163,8 +176,10 @@ project-sentinel/
 │   └── sentinel-agent.ts         # Auto-resolution engine
 ├── docs/                         # Documentation
 │   ├── incident-history.log      # Incident tracking log
-│   └── sentinel.db               # SQLite database
-├── scripts/
+│   ├── sentinel.db               # SQLite database
+│   ├── agent-logs.txt            # Agent action summary (May 11)
+│   ├── incident-export-*.json   # Incident data export
+│   └── post-mortem-*.md          # Post-incident analysis
 ├── package.json                  # Root package.json
 ├── tsconfig.json                 # Root TypeScript config
 ├── jest.config.js                # Jest test configuration
@@ -248,6 +263,9 @@ curl http://localhost:3002/health
 ### Dashboard API
 
 ```bash
+# Get all services and their health status
+curl http://localhost:3000/api/services
+
 # Get all incidents
 curl http://localhost:3000/api/incidents
 
@@ -299,6 +317,30 @@ User: "All tests passing. Commit it."
 - **Production-Ready**: Proper error handling, TypeScript types, tests
 - **Self-Healing**: The agent can fix issues autonomously
 - **Tested**: 8 regression tests ensure the system works correctly
+
+---
+
+## Incident History
+
+All incidents are tracked in SQLite and logged for analysis.
+
+### View Incidents
+
+```bash
+# Via API
+curl http://localhost:3000/api/incidents
+
+# Raw log file
+cat docs/incident-history.log
+```
+
+### Generated Reports
+
+| Report | Description |
+|--------|-------------|
+| `docs/agent-logs.txt` | Agent action summary with detection/resolution details |
+| `docs/post-mortem-2026-05-11.md` | Full post-mortem analysis with MTTD/MTTR metrics |
+| `docs/incident-export-*.json` | Raw incident data in JSON format |
 
 ---
 
