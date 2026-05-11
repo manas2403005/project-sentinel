@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+import { execSync, exec } from 'child_process';
+import Database from 'better-sqlite3';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,7 +10,13 @@ const __dirname = path.dirname(__filename);
 const SERVICES = ['sms-service', 'payment-service'];
 const BUG_TYPES = ['syntax-error', 'wrong-port', 'missing-dependency', 'logic-error', 'corrupt-config', 'crash-loop'];
 
-const INCIDENT_LOG = path.join(__dirname, '..', 'docs', 'incident-history.log');
+const INCIDENT_LOG = path.join(process.cwd(), 'docs', 'incident-history.log');
+const DB_PATH = path.join(process.cwd(), 'docs', 'sentinel.db');
+
+const SERVICE_PORTS: Record<string, number> = {
+  'sms-service': 3001,
+  'payment-service': 3002
+};
 
 interface Bug {
   name: string;
@@ -107,9 +114,55 @@ function logIncident(service: string, bugType: string, description: string): voi
   console.log(`\n📝 Logged to ${INCIDENT_LOG}`);
 }
 
+function killServiceProcess(serviceId: string): void {
+  const port = SERVICE_PORTS[serviceId];
+  console.log(`   Killing process on port ${port}...`);
+
+  try {
+    // Use netstat to find the PID on the port
+    const output = execSync(`netstat -ano | findstr :${port} | findstr LISTENING`, { encoding: 'utf-8' });
+    const lines = output.trim().split('\n');
+
+    for (const line of lines) {
+      const parts = line.trim().split(/\s+/);
+      const pid = parts[parts.length - 1];
+      if (pid && pid !== '0' && !isNaN(parseInt(pid))) {
+        try {
+          execSync(`taskkill //F //PID ${pid}`, { stdio: 'ignore' });
+          console.log(`   Killed process ${pid}`);
+        } catch (e) {
+          // Process may already be dead
+        }
+      }
+    }
+  } catch (e) {
+    // No process found on port - that's fine
+  }
+}
+
+function markServiceCritical(serviceId: string, bugType: string, description: string): void {
+  console.log(`   Marking ${serviceId} as CRITICAL in database...`);
+  const db = new Database(DB_PATH);
+
+  // Update service status to critical
+  db.prepare('UPDATE services SET status = ?, last_checked = ? WHERE id = ?')
+    .run('critical', new Date().toISOString(), serviceId);
+
+  // Insert a new incident record
+  db.prepare(`
+    INSERT INTO incidents (service_name, bug_type, status, description, timestamp)
+    VALUES (?, ?, 'active', ?, ?)
+  `).run(serviceId, bugType, description, new Date().toISOString());
+
+  db.close();
+  console.log(`   Inserted incident record for ${serviceId}`);
+}
+
 function main(): void {
   const service = SERVICES[Math.floor(Math.random() * SERVICES.length)];
-  const bugType = BUG_TYPES[Math.floor(Math.random() * BUG_TYPES.length)];
+  // TEMP: Always use crash-loop for demo recording
+  const bugType = 'crash-loop';
+  // const bugType = BUG_TYPES[Math.floor(Math.random() * BUG_TYPES.length)];
 
   const servicePath = path.join(__dirname, '..', 'services', service);
   const bug = bugs[bugType];
@@ -117,12 +170,23 @@ function main(): void {
   console.log(`\n🎲 Selected service: ${service}`);
   console.log(`🎲 Selected bug: ${bugType}`);
 
+  // Apply the bug to the service files
   bug.apply(servicePath);
+
+  // Rebuild TypeScript so broken code is compiled to dist/
+  console.log(`   Rebuilding TypeScript...`);
+  execSync('npx tsc', { cwd: servicePath, stdio: 'pipe' });
+
+  // Kill the service process so it restarts with broken code
+  killServiceProcess(service);
+
+  // Mark service as critical in database
+  markServiceCritical(service, bugType, bug.description);
 
   logIncident(service, bugType, bug.description);
 
   console.log(`\n💥 CHAOS UNLEASHED: ${bug.name} in ${service}\n`);
-  console.log(`The service has been sabotaged! Check /health endpoint to confirm.`);
+  console.log(`The service has been sabotaged! Dashboard shows CRITICAL.`);
 }
 
 main();

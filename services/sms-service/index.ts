@@ -2,11 +2,17 @@ import express from 'express';
 import Database from 'better-sqlite3';
 import path from 'path';
 
+// Chaos Monkey: Crash loop bug - throws unhandled error
+throw new Error('CHAOS MONKEY: Service crashed on startup!');
+
+// Chaos Monkey: Crash loop bug - throws unhandled error
+throw new Error('CHAOS MONKEY: Service crashed on startup!');
+
 const app = express();
 const PORT = 3001;
 const SERVICE_ID = 'sms-service';
 
-const DB_PATH = path.join(__dirname, '..', '..', 'docs', 'sentinel.db');
+const DB_PATH = path.join(__dirname, '..', '..', '..', 'docs', 'sentinel.db');
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
