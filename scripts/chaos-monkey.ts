@@ -1,12 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SERVICES = ['sms-service', 'payment-service'];
-const BUG_TYPES = ['syntax-error', 'wrong-port', 'missing-dependency', 'logic-error', 'corrupt-config'];
+const BUG_TYPES = ['syntax-error', 'wrong-port', 'missing-dependency', 'logic-error', 'corrupt-config', 'crash-loop'];
 
 const INCIDENT_LOG = path.join(__dirname, '..', 'docs', 'incident-history.log');
 
@@ -54,6 +55,9 @@ const bugs: Record<string, Bug> = {
         const randomDep = deps[Math.floor(Math.random() * deps.length)];
         delete pkg.dependencies[randomDep];
         fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
+        // Run npm install to actually remove the package from node_modules
+        console.log(`   Running npm install to remove ${randomDep}...`);
+        execSync('npm install', { cwd: servicePath, stdio: 'pipe' });
       }
     }
   },
@@ -77,6 +81,20 @@ const bugs: Record<string, Bug> = {
       delete tsconfig.compilerOptions.module;
       delete tsconfig.compilerOptions.outDir;
       fs.writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2));
+    }
+  },
+  'crash-loop': {
+    name: 'Crash Loop',
+    description: 'Service throws unhandled error on startup',
+    apply: (servicePath: string) => {
+      const indexPath = path.join(servicePath, 'index.ts');
+      let content = fs.readFileSync(indexPath, 'utf-8');
+      // Add unhandled error throw at the top of the file
+      const crashCode = `\n// Chaos Monkey: Crash loop bug - throws unhandled error\nthrow new Error('CHAOS MONKEY: Service crashed on startup!');\n`;
+      // Insert after the imports
+      const importEnd = content.indexOf('\n', content.lastIndexOf('import'));
+      content = content.slice(0, importEnd + 1) + crashCode + content.slice(importEnd + 1);
+      fs.writeFileSync(indexPath, content);
     }
   }
 };
