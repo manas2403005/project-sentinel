@@ -3,118 +3,63 @@
 import { useEffect, useState } from 'react';
 import '../app.css';
 
-interface ServiceHealth {
+interface ServiceStatus {
+  id: string;
   name: string;
-  url: string;
   status: 'healthy' | 'broken' | 'unknown';
-  lastCheck: Date;
+  last_checked: string;
+  incident_count: number;
 }
 
-interface IncidentLog {
+interface Incident {
+  id: number;
+  service_name: string;
+  bug_type: string;
+  status: string;
+  description: string;
   timestamp: string;
-  service: string;
-  type: string;
-  result: string;
-  notes: string;
-}
-
-const SERVICES = [
-  { name: 'sms-service', url: 'http://localhost:3001/health' },
-  { name: 'payment-service', url: 'http://localhost:3002/health' },
-];
-
-const INCIDENT_LOG_PATH = '/docs/incident-history.log';
-
-async function fetchHealth(url: string): Promise<{ status: string } | null> {
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(3000) });
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-function parseIncidentLog(logContent: string): IncidentLog[] {
-  const lines = logContent.split('\n');
-  const incidents: IncidentLog[] = [];
-
-  for (const line of lines) {
-    const match = line.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*(FIXED|APPLIED)\s*\|\s*(.+)$/);
-    if (match) {
-      incidents.push({
-        timestamp: match[1],
-        service: match[2].trim(),
-        type: match[3].trim(),
-        result: match[4],
-        notes: match[5].trim(),
-      });
-    }
-  }
-
-  return incidents;
+  resolved_at: string;
 }
 
 export default function Dashboard() {
-  const [services, setServices] = useState<ServiceHealth[]>([
-    { name: 'sms-service', url: 'http://localhost:3001/health', status: 'unknown', lastCheck: new Date() },
-    { name: 'payment-service', url: 'http://localhost:3002/health', status: 'unknown', lastCheck: new Date() },
-  ]);
-  const [incidentLog, setIncidentLog] = useState<IncidentLog[]>([]);
+  const [services, setServices] = useState<ServiceStatus[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    checkServices();
-    fetchIncidentLog();
-
-    const interval = setInterval(() => {
-      checkServices();
-      fetchIncidentLog();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const checkServices = async () => {
-    const results = await Promise.all(
-      SERVICES.map(async (service) => {
-        const health = await fetchHealth(service.url);
-        return {
-          ...service,
-          status: health?.status === 'healthy' ? 'healthy' : health?.status === 'broken' ? 'broken' : 'unknown',
-          lastCheck: new Date(),
-        };
-      })
-    );
-    setServices(results);
-    setLastUpdated(new Date());
-  };
-
-  const fetchIncidentLog = async () => {
+  const fetchFromAPI = async () => {
     try {
-      const response = await fetch(INCIDENT_LOG_PATH);
-      const text = await response.text();
-      setIncidentLog(parseIncidentLog(text));
-    } catch {
-      console.error('Failed to fetch incident log');
+      const [servicesRes, incidentsRes] = await Promise.all([
+        fetch('/api/services'),
+        fetch('/api/incidents'),
+      ]);
+
+      if (servicesRes.ok) {
+        const servicesData = await servicesRes.json();
+        setServices(servicesData);
+      }
+
+      if (incidentsRes.ok) {
+        const incidentsData = await incidentsRes.json();
+        setIncidents(incidentsData);
+      }
+
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
     }
   };
 
   useEffect(() => {
-    checkServices();
-    fetchIncidentLog();
+    setMounted(true);
+    fetchFromAPI();
 
-    const interval = setInterval(() => {
-      checkServices();
-      fetchIncidentLog();
-    }, 5000);
-
+    const interval = setInterval(fetchFromAPI, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const activeIncidents = services.filter(s => s.status !== 'healthy');
-  const resolvedIncidents = incidentLog.filter(i => i.result === 'FIXED');
+  const activeIncidents = incidents.filter(i => i.status === 'active');
+  const resolvedIncidents = incidents.filter(i => i.status === 'resolved');
 
   return (
     <div>
@@ -129,12 +74,12 @@ export default function Dashboard() {
           {activeIncidents.length === 0 ? (
             <div className="no-data">No active incidents</div>
           ) : (
-            activeIncidents.map((service) => (
-              <div key={service.name} className="incident-item">
-                <span className={`status-dot ${service.status === 'broken' ? 'broken' : ''}`}></span>
-                <strong>{service.name}</strong>
-                <div style={{ color: '#f85149', marginTop: '4px' }}>
-                  {service.status === 'unknown' ? 'Service unreachable' : 'Status: broken'}
+            activeIncidents.map((incident) => (
+              <div key={incident.id} className="incident-item">
+                <span className="status-dot broken"></span>
+                <strong>{incident.service_name}</strong>
+                <div style={{ color: '#f85149', marginTop: '4px', fontSize: '12px' }}>
+                  {incident.bug_type}: {incident.description}
                 </div>
               </div>
             ))
@@ -146,14 +91,14 @@ export default function Dashboard() {
           {resolvedIncidents.length === 0 ? (
             <div className="no-data">No resolved incidents yet</div>
           ) : (
-            resolvedIncidents.slice(0, 10).map((incident, idx) => (
-              <div key={idx} className="resolved-item">
+            resolvedIncidents.slice(0, 10).map((incident) => (
+              <div key={incident.id} className="resolved-item">
                 <div>
                   <span className="log-timestamp">[{new Date(incident.timestamp).toLocaleString()}]</span>
-                  {' '}<span style={{ color: '#3fb950' }}>{incident.service}</span>
+                  {' '}<span style={{ color: '#3fb950' }}>{incident.service_name}</span>
                 </div>
                 <div style={{ fontSize: '12px', color: '#8b949e', marginTop: '4px' }}>
-                  {incident.notes}
+                  {incident.bug_type}: {incident.description}
                 </div>
               </div>
             ))
@@ -163,7 +108,7 @@ export default function Dashboard() {
         <div className="panel">
           <div className="panel-header">System Health</div>
           {services.map((service) => (
-            <div key={service.name} className="service-item">
+            <div key={service.id} className="service-item">
               <span className={`status-dot ${service.status === 'healthy' ? 'healthy' : service.status === 'broken' ? 'broken' : ''}`}></span>
               <span style={{ fontWeight: 500 }}>{service.name}</span>
               <span className={`status-${service.status}`} style={{ float: 'right' }}>
@@ -175,18 +120,18 @@ export default function Dashboard() {
       </div>
 
       <div className="panel">
-        <div className="panel-header">Incident History Log</div>
-        {incidentLog.length === 0 ? (
-          <div className="no-data">No log entries</div>
+        <div className="panel-header">All Incidents</div>
+        {incidents.length === 0 ? (
+          <div className="no-data">No incidents in database</div>
         ) : (
-          incidentLog.slice(0, 20).map((entry, idx) => (
-            <div key={idx} className="log-entry">
+          incidents.slice(0, 20).map((entry) => (
+            <div key={entry.id} className="log-entry">
               <span className="log-timestamp">{entry.timestamp}</span>
-              {' | '}{entry.service}
-              {' | '}{entry.type}
+              {' | '}{entry.service_name}
+              {' | '}{entry.bug_type}
               {' | '}
-              <span className={entry.result === 'FIXED' ? 'log-fix' : ''}>{entry.result}</span>
-              {' | '}{entry.notes}
+              <span className={entry.status === 'resolved' ? 'log-fix' : ''}>{entry.status.toUpperCase()}</span>
+              {' | '}{entry.description}
             </div>
           ))
         )}

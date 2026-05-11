@@ -45,3 +45,7 @@ next-env.d.ts
 .vscode/
 *.swp
 *.swo
+
+# App specific
+app/node_modules/
+app/.next/
