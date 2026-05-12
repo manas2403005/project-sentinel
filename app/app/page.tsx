@@ -217,15 +217,18 @@ export default function Dashboard() {
         <RecentResolvedPanel incidents={incidents} />
         <div className="panel">
           <div className="panel-header">System Health</div>
-          {services.map((service) => (
-            <div key={service.id} className="service-item">
-              <span className={`status-dot ${service.status === 'healthy' ? 'healthy' : service.status === 'healing' ? 'healing' : 'broken'}`}></span>
-              <span style={{ fontWeight: 500 }}>{service.name}</span>
-              <span className={`status-${service.status}`} style={{ float: 'right' }}>
-                {service.status.toUpperCase()}
-              </span>
-            </div>
-          ))}
+          {services.map((service) => {
+            const isCritical = service.status === 'critical';
+            return (
+              <div key={service.id} className="service-item">
+                <span className={`status-dot ${isCritical ? 'critical' : service.status === 'healthy' ? 'healthy' : service.status === 'healing' ? 'healing' : 'broken'}`}></span>
+                <span style={{ fontWeight: 500 }}>{service.name}</span>
+                <span className={`status-${isCritical ? 'critical' : service.status}`} style={{ float: 'right' }}>
+                  {service.status.toUpperCase()}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

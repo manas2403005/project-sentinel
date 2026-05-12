@@ -19,17 +19,12 @@ Project Sentinel is an autonomous incident resolution system. It monitors servic
 
 ```bash
 # Development
-npm run dev          # Start all services + frontend
-docker compose up   # Start infrastructure (Kafka, etc.)
+npm run start:app    # Start Next.js dashboard (port 3000)
+npm run start:services # Start microservices
 
-# Frontend only
-cd app && npm run dev
-
-# Services
-cd services && npm run start
-
-# Chaos Monkey
-node scripts/chaos-monkey.js
+# Demo Flow (human-triggered)
+npm run chaos        # Unleash chaos - breaks a random service (shows RED)
+npm run fix          # Fix broken services - applies fix, runs tests (shows GREEN)
 
 # Tests
 npm test             # Run all tests
@@ -38,6 +33,13 @@ npx vitest run <file> # Single test file
 ```
 
 ## Resolution Protocol
+
+**When a CRITICAL incident occurs:**
+
+1. **Main Agent**: Update dashboard incident status to "Investigating"
+2. **Subagent Alpha (Debugger)**: Read `/services/logs`, find the bug, fix it
+3. **Subagent Beta (QA)**: Write a regression test for the bug that was fixed
+4. **Main Agent**: Update dashboard to "Resolved" after subagents complete
 
 **Before applying ANY fix to an incident:**
 
@@ -51,7 +53,10 @@ npx vitest run <file> # Single test file
 - **Language**: Always use TypeScript
 - **Naming**: camelCase for variables/functions, PascalCase for components
 - **Testing**: Write tests BEFORE committing (follows TDD)
-- **Infrastructure**: SQLite for persistence, Kafka (simulated) for messaging
+
+## Database Access
+
+This project uses SQLite MCP Server. Claude must use the MCP sqlite tools to query the sentinel.db database directly instead of reading files.
 
 ## Architecture
 

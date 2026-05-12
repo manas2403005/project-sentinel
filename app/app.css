@@ -19,6 +19,10 @@ body {
   color: #f85149;
 }
 
+.status-critical {
+  color: #f85149;
+}
+
 .status-dot {
   display: inline-block;
   width: 10px;
@@ -33,6 +37,16 @@ body {
 
 .status-dot.broken {
   background-color: #f85149;
+}
+
+.status-dot.critical {
+  background-color: #f85149;
+  animation: pulse-critical 1s ease-in-out infinite;
+}
+
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .panel-header {

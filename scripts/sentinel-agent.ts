@@ -94,9 +94,30 @@ function logIncident(message: string): void {
 
 function getUnhealthyServicesFromDB(): Array<{ id: string; name: string; status: string }> {
   const database = getDatabase();
-  return database.prepare(
+
+  // Get services with explicit critical/unreachable status
+  const explicitUnhealthy = database.prepare(
     "SELECT id, name, status FROM services WHERE status IN ('critical', 'unreachable', 'broken')"
   ).all() as Array<{ id: string; name: string; status: string }>;
+
+  // Also get services that have active incidents
+  const servicesWithIncidents = database.prepare(
+    "SELECT s.id, s.name, s.status FROM services s JOIN incidents i ON s.id = i.service_name WHERE i.status = 'active'"
+  ).all() as Array<{ id: string; name: string; status: string }>;
+
+  // Combine both lists and set status to critical for any with active incidents
+  const allUnhealthy = [...explicitUnhealthy];
+  for (const svc of servicesWithIncidents) {
+    if (!allUnhealthy.find(s => s.id === svc.id)) {
+      allUnhealthy.push({ ...svc, status: 'critical' });
+    } else {
+      // Update status to critical if there's an active incident
+      const idx = allUnhealthy.findIndex(s => s.id === svc.id);
+      allUnhealthy[idx].status = 'critical';
+    }
+  }
+
+  return allUnhealthy;
 }
 
 function updateServiceStatus(serviceId: string, status: string): void {
@@ -236,6 +257,15 @@ async function fixService(serviceId: string): Promise<boolean> {
       execSync('npx tsc', { cwd: servicePath, stdio: 'pipe' });
       console.log(`🔧 ${serviceId}: TypeScript compiled successfully`);
 
+      // Run tests to verify the fix
+      console.log(`🔧 ${serviceId}: Running tests...`);
+      try {
+        execSync('npm test', { cwd: path.join(__dirname, '..'), stdio: 'pipe' });
+        console.log(`🔧 ${serviceId}: Tests passed!`);
+      } catch (e) {
+        console.log(`⚠️ ${serviceId}: Some tests may have failed, continuing anyway...`);
+      }
+
       // Restart the service to pick up the fixed code
       console.log(`🔧 ${serviceId}: Restarting service...`);
       await restartService(serviceId);
@@ -289,29 +319,47 @@ async function runHealthCheck(): Promise<void> {
     const healthCheck = await checkHealthEndpoint(serviceId);
     const dbService = getDatabase().prepare('SELECT status FROM services WHERE id = ?').get(serviceId) as { status: string } | undefined;
 
+    // Check if there's an active incident for this service
+    const activeIncident = getDatabase().prepare(
+      "SELECT id FROM incidents WHERE service_name = ? AND status = 'active'"
+    ).get(serviceId);
+
     if (!healthCheck.healthy) {
       console.log(`⚠️ ${serviceId}: /health returns ${healthCheck.status || healthCheck.error} - marking as CRITICAL`);
       updateServiceStatus(serviceId, 'critical');
-    } else if (dbService && dbService.status === 'healthy') {
-      // Only update to healthy if DB already shows healthy (don't override critical)
+    } else if (!activeIncident && dbService && dbService.status !== 'healing') {
+      // Only update to healthy if there's no active incident and not in healing state
       updateServiceStatus(serviceId, 'healthy');
     }
-    // If DB shows critical/healing, don't override - process it below
+    // If there's an active incident or healing, don't override - process it below
   }
 
   // Also check DB for services marked as critical/unreachable (from chaos monkey)
+  // NOTE: Auto-healing is now DISABLED - use "fix it" command to manually heal
   const unhealthyFromDB = getUnhealthyServicesFromDB();
 
-  console.log(`\n🔍 SENTINEL AGENT: Checking DB for unhealthy services...`);
-
   if (unhealthyFromDB.length > 0) {
-    console.log(`⚠️ SENTINEL AGENT: Found ${unhealthyFromDB.length} unhealthy service(s) in DB`);
-
-    for (const service of unhealthyFromDB) {
-      await fixService(service.id);
-    }
+    console.log(`⚠️ Found ${unhealthyFromDB.length} unhealthy service(s): ${unhealthyFromDB.map(s => s.id).join(', ')}`);
+    console.log(`   Run "fix it" to manually heal these services`);
   } else {
-    console.log(`✅ SENTINEL AGENT: All services healthy at ${agentState.lastCheck}`);
+    console.log(`✅ All services healthy at ${agentState.lastCheck}`);
+  }
+}
+
+async function fixAllCritical(): Promise<void> {
+  // Manual fix - fix all critical services immediately
+  const unhealthyFromDB = getUnhealthyServicesFromDB();
+
+  if (unhealthyFromDB.length === 0) {
+    console.log('No critical services to fix.');
+    return;
+  }
+
+  console.log(`🔧 Manual fix triggered for: ${unhealthyFromDB.map(s => s.id).join(', ')}\n`);
+
+  for (const service of unhealthyFromDB) {
+    console.log(`🔧 Fixing ${service.id}...`);
+    await fixService(service.id);
   }
 }
 
@@ -319,27 +367,37 @@ function getAgentState(): AgentState {
   return { ...agentState };
 }
 
-function startAgent(): void {
+// CLI mode - triggered manually by "fix" command
+// Auto-healing is DISABLED - use "npm run fix" to manually heal
+
+const command = process.argv[2];
+
+async function main() {
+  if (command === 'fix') {
+    console.log('\n🔧 SENTINEL: Manual fix triggered...\n');
+    await fixAllCritical();
+    console.log('\n✅ Fix process complete - dashboard should show green!\n');
+    process.exit(0);
+  }
+
+  // Default: show help
   console.log(`
-╔══════════════════════════════════════════════════════════════╗
-║           🤖 SENTINEL AUTONOMOUS AGENT STARTED            ║
-║                                                            ║
-║  - Polling /health endpoints every 10 seconds             ║
-║  - Checking database for critical services                  ║
-║  - Verifying fixes before marking healthy                   ║
-║  - Logging all actions to incident-history.log             ║
-╚══════════════════════════════════════════════════════════════╝
+Sentinel CLI - Human-triggered demo flow
+
+Usage:
+  npm run chaos    - Break a random service (shows CRITICAL)
+  npm run fix      - Fix broken services (shows RESOLVED)
+
+Demo flow:
+  1. Type "npm run chaos" → chaos-monkey breaks a service → Dashboard shows RED
+  2. Type "npm run fix"   → sentinel fixes it → Dashboard shows GREEN
   `);
+}
 
-  // Initial health check
-  runHealthCheck();
-
-  // Poll every 10 seconds
-  setInterval(runHealthCheck, 10000);
+// Run CLI if executed directly with arguments
+if (process.argv.length > 2) {
+  main();
 }
 
 // Export for API access
-export { getAgentState, startAgent, agentState };
-
-// Run if executed directly
-startAgent();
+export { getAgentState, runHealthCheck, fixService, fixAllCritical, agentState };

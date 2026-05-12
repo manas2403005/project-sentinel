@@ -27,7 +27,19 @@ export async function GET() {
   try {
     const db = new Database(DB_PATH);
     initializeDatabase(db);
-    const services = db.prepare('SELECT * FROM services').all();
+    const services = db.prepare('SELECT * FROM services').all() as Array<{id: string; name: string; status: string; last_checked: string; incident_count: number}>;
+
+    // Check each service for active incidents and override status to critical if needed
+    for (const service of services) {
+      const activeIncident = db.prepare(
+        "SELECT id FROM incidents WHERE service_name = ? AND status = 'active'"
+      ).get(service.id);
+
+      if (activeIncident) {
+        service.status = 'critical';
+      }
+    }
+
     db.close();
     return NextResponse.json(services);
   } catch (error) {

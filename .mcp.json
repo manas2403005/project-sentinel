@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "@mokei/mcp-sqlite", "docs/sentinel.db"]
+    }
+  }
+}
