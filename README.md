@@ -1,367 +1,214 @@
-# Project Sentinel
+# 🤖 Project Sentinel — Autonomous Incident Resolution Engine
 
-### Autonomous Incident Resolution Engine
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=next.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![Jest](https://img.shields.io/badge/Jest-C21325?style=flat-square&logo=jest&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)](https://jestjs.io/)
+An AI-powered DevOps system that autonomously detects, diagnoses, and fixes production incidents using Claude Code — with zero manual intervention.
 
 ---
 
-## What is Project Sentinel?
+## 🚀 [Live Demo](https://project-sentinel-pearl.vercel.app)
 
-Project Sentinel is an **autonomous incident resolution system** that monitors microservices, automatically detects failures injected by Chaos Monkey, and heals itself without human intervention. Think of it as a self-healing nervous system for your infrastructure.
+---
+
+## How It Works
 
 ```
-┌──────────────┐     ┌───────────┐     ┌──────────┐     ┌─────────────────┐
-│  CHAOS       │     │  SERVICES │     │  SQLite  │     │  SENTINEL       │
-│  MONKEY      │────▶│  (sms,     │────▶│  DB      │────▶│  AGENT          │
-│  (injects    │     │  payment) │     │  (tracks │     │  (analyzes &    │
-│  failures)   │     │           │     │  health) │     │  decides)      │
-└──────────────┘     └───────────┘     └──────────┘     └────────┬────────┘
+CHAOS MONKEY          DASHBOARD           CLAUDE CODE           TESTS
+     │                    │                    │                  │
+     ▼                    ▼                    ▼                  ▼
+┌─────────┐          ┌─────────┐         ┌─────────┐        ┌─────────┐
+│ Breaks  │─────────▶│ Shows   │─────────▶│ Diagnoses│───────▶│ Verify  │
+│ a       │          │ CRITICAL│         │ & fixes  │        │ fix     │
+│ service │          │ incident │         │ the issue│        │ passes  │
+└─────────┘          └─────────┘         └─────────┘        └─────────┘
                                                                   │
-                         ┌──────────────────┐                   │
-                         │  DASHBOARD       │◀──────────────────┘
-                         │  (shows status   │        (auto-heals)
-                         │   & logs)        │
-                         └──────────────────┘
+                        ┌──────────────────────────────────────────┘
+                        ▼
+                   ┌─────────┐
+                   │ RESOLVED│
+                   │         │
+                   └─────────┘
+```
+
+1. **Chaos Monkey** randomly breaks a service
+2. **Dashboard** detects and displays CRITICAL incident
+3. **Claude Code** autonomously diagnoses root cause and applies fix
+4. **Regression tests** run, dashboard updates to RESOLVED
+
+---
+
+## Architecture
+
+```
+                                    ┌─────────────────────────────┐
+                                    │      CLAUDE CODE            │
+                                    │  ┌─────────┐ ┌─────────┐   │
+                                    │  │  Main   │ │  Alpha  │   │
+                                    │  │  Agent  │ │ Debugger│   │
+                                    │  └─────────┘ └─────────┘   │
+                                    │  ┌─────────┐               │
+                                    │  │  Beta   │               │
+                                    │  │  QA     │               │
+                                    │  └─────────┘               │
+                                    └──────────┬──────────────────┘
+                                               │
+    ┌──────────────────────────────────────────┼────────────────────────┐
+    │                                          │                        │
+    ▼                                          ▼                        ▼
+┌──────────┐      ┌───────────────┐    ┌──────────────┐    ┌─────────────┐
+│  CHAOS   │─────▶│   SERVICES    │    │  NEXT.JS     │    │  POST-MORTEM│
+│  MONKEY  │      │               │    │  DASHBOARD   │    │  REPORTS    │
+│          │      │  ┌─────────┐  │    │              │    │             │
+│ Injects  │      │  │  SMS    │  │    │  Real-time   │    │  Incident   │
+│ failures │      │  │  (3001) │  │    │  health      │    │  analysis   │
+│          │      │  └─────────┘  │    │  monitoring  │    │             │
+│ 6 types  │      │               │    │              │    │  docs/      │
+│ of bugs  │      │  ┌─────────┐  │    │  Dark mode   │    │  *.md       │
+│          │      │  │Payment │  │    │              │    │             │
+│ scripts/ │      │  │ (3002) │  │    │  localhost:  │    │             │
+│ chaos-*  │      │  └─────────┘  │    │  3000       │    │             │
+└──────────┘      └───────┬───────┘    └──────────────┘    └─────────────┘
+                           │
+                           ▼
+                  ┌───────────────────┐
+                  │   SQLite DB       │
+                  │  docs/sentinel.db │
+                  │                   │
+                  │ • services        │
+                  │ • incidents       │
+                  │ • resolution_logs │
+                  │ • agent_state     │
+                  └───────────────────┘
 ```
 
 ---
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| **Real-time Monitoring** | Services report health every 5 seconds to SQLite |
-| **Autonomous Detection** | Chaos Monkey randomly injects bugs to test the system |
-| **Auto-healing** | Sentinel Agent analyzes incidents and applies fixes |
-| **Persistent Storage** | SQLite tracks all incidents, services, and resolution history |
-| **Zero Downtime** | Failures are detected and resolved automatically |
-| **Regression Tests** | 8 passing tests ensure services stay healthy |
-| **Dark Mode Dashboard** | Beautiful Next.js UI showing service status in real-time |
-
----
-
-## Quick Start
-
-### Prerequisites
-- Node.js 18+
-- npm 8+
-
-### 1. Install Dependencies
-
-```bash
-npm install
-```
-
-### 2. Start Infrastructure
-
-```bash
-# Start SQLite database (via Next.js app)
-cd app && npm install && cd ..
-```
-
-### 3. Start All Services
-
-```bash
-# Terminal 1: Start SMS Service (port 3001)
-cd services/sms-service && npm run dev
-
-# Terminal 2: Start Payment Service (port 3002)
-cd services/payment-service && npm run dev
-
-# Terminal 3: Start Dashboard (port 3000)
-cd app && npm run dev
-```
-
-**Or use the convenience script:**
-
-```bash
-npm run start:all
-```
-
-### 4. Open Dashboard
-
-Navigate to: [http://localhost:3000](http://localhost:3000)
-
----
-
-## Chaos Monkey
-
-The Chaos Monkey randomly injects failures to test Sentinel's autonomous resolution capabilities.
-
-### Run Chaos Monkey
-
-```bash
-npm run chaos
-```
-
-### What Chaos Monkey Does:
-- Randomly marks services as "broken"
-- Simulates network timeouts and database errors
-- Triggers incident creation in SQLite
-- Tests the autonomous resolution pipeline
-
----
-
-## Testing
-
-### Run All Tests
-
-```bash
-npm test
-```
-
-### Expected Output
-
-```
-PASS services/sms-service/sms-service.test.ts
-PASS services/payment-service/payment-service.test.ts
-
-Test Suites: 2 passed, 2 total
-Tests:       8 passed, 8 total
-```
-
-### Test Coverage
-
-| Service | Tests |
-|---------|-------|
-| SMS Service | Health endpoint, Express dependency, TypeScript compilation |
-| Payment Service | Health endpoint, Express dependency, TypeScript compilation |
-
-### Chaos Monkey Test Results (May 11, 2026)
-
-| Metric | Value |
-|--------|-------|
-| Total Incidents Injected | 5 |
-| Detection Rate | 100% |
-| Auto-Resolution Rate | 20% |
-| Mean Time To Detect | < 5 seconds |
-| Mean Time To Resolve | 3 minutes |
-
-**Key Finding:** System successfully auto-healed dependency issues. Logic-level bugs require enhanced capabilities.
+- **Real-time Monitoring** — Services report health every 5 seconds via SQLite MCP Server
+- **Autonomous Bug Detection** — Multi-agent orchestration (Main + Alpha + Beta)
+- **Auto-healing Sentinel** — Claude Code diagnoses and fixes without human intervention
+- **6 Chaos Bug Types** — Memory leaks, timeouts, corrupt data, syntax errors, crash loops, dependency failures
+- **Regression Tests** — 8/8 tests passing validate fixes don't break anything
+- **Dark Mode Dashboard** — Beautiful Next.js UI with real-time status updates
+- **Post-mortem Reports** — Automatic incident analysis and documentation generation
 
 ---
 
 ## Project Structure
 
 ```
-project-sentinel/
-├── app/                          # Next.js Dashboard
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── incidents/        # Incident API routes
-│   │   │   ├── agent-status/     # Agent status endpoints
-│   │   │   └── services/         # Services API routes
-│   │   ├── page.tsx              # Main dashboard page
-│   │   └── layout.tsx            # App layout
-│   ├── package.json
-│   └── tsconfig.json
-├── services/                     # Microservices
-│   ├── sms-service/              # SMS microservice (port 3001)
-│   │   ├── index.ts
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   └── sms-service.test.ts   # Regression tests
-│   └── payment-service/          # Payment microservice (port 3002)
-│       ├── index.ts
-│       ├── package.json
-│       ├── tsconfig.json
-│       └── payment-service.test.ts # Regression tests
-├── scripts/                      # Automation scripts
-│   ├── chaos-monkey.ts           # Failure injection
-│   └── sentinel-agent.ts         # Auto-resolution engine
-├── docs/                         # Documentation
-│   ├── incident-history.log      # Incident tracking log
-│   ├── sentinel.db               # SQLite database
-│   ├── agent-logs.txt            # Agent action summary (May 11)
-│   ├── incident-export-*.json   # Incident data export
-│   └── post-mortem-*.md          # Post-incident analysis
-├── package.json                  # Root package.json
-├── tsconfig.json                 # Root TypeScript config
-├── jest.config.js                # Jest test configuration
-├── CLAUDE.md                     # Claude Code instructions
-└── README.md                     # This file
+sentinel/
+├── .github/
+│   └── workflows/           # CI/CD for Vercel deployment
+├── app/                     # Next.js dashboard (port 3000)
+│   └── app/
+│       ├── api/
+│       │   ├── agent-status/ # Sentinel agent endpoints
+│       │   ├── incidents/    # Incident CRUD
+│       │   └── services/     # Service health API
+│       └── page.tsx          # Main dashboard
+├── services/                # Microservices
+│   ├── sms-service/          # SMS (port 3001)
+│   │   └── *.test.ts
+│   └── payment-service/      # Payment (port 3002)
+│       └── *.test.ts
+├── scripts/                 # Automation
+│   ├── chaos-monkey.ts       # Failure injection
+│   ├── sentinel-agent.ts     # Auto-resolution engine
+│   └── *.ts                 # CLI utilities
+├── docs/                    # Documentation & DB
+│   ├── sentinel.db           # SQLite database
+│   └── *.log                # Incident logs
+├── CLAUDE.md                # Claude Code instructions
+├── vercel.json              # Vercel config
+└── README.md                # This file
 ```
 
 ---
 
-## Architecture Deep Dive
+## Quick Start
 
-```
-                    ┌─────────────────────────────────────────────────────────┐
-                    │                    PROJECT SENTINEL                     │
-                    └─────────────────────────────────────────────────────────┘
+```bash
+# Install dependencies
+npm install && cd app && npm install && cd ..
 
-  ┌──────────────┐         ┌──────────────────────────────────────────┐
-  │              │         │          SERVICES LAYER                     │
-  │   CHAOS      │         │  ┌─────────────────┐ ┌─────────────────┐  │
-  │   MONKEY     │────────▶│  │  SMS Service    │ │ Payment Service │  │
-  │              │         │  │  Port: 3001      │ │ Port: 3002       │  │
-  │  (Failure    │         │  │  /health        │ │ /health         │  │
-  │   Injection) │         │  └────────┬────────┘ └────────┬────────┘  │
-  └──────────────┘         └───────────┼──────────────────┼───────────┘
-                                        │                  │
-                                        ▼                  ▼
-                              ┌─────────────────────────────────┐
-                              │           SQLite DB              │
-                              │   /docs/sentinel.db              │
-                              │                                  │
-                              │   ┌─────────────────────────┐   │
-                              │   │  services table         │   │
-                              │   │  - id (TEXT PRIMARY KEY)│   │
-                              │   │  - name                 │   │
-                              │   │  - status               │   │
-                              │   │  - last_checked         │   │
-                              │   │  - incident_count      │   │
-                              │   └─────────────────────────┘   │
-                              └─────────────────┬─────────────────┘
-                                                │
-                                                ▼
-                              ┌─────────────────────────────────┐
-                              │        SENTINEL AGENT           │
-                              │   (Autonomous Resolution)        │
-                              │                                  │
-                              │   • Polls health endpoints       │
-                              │   • Detects failures             │
-                              │   • Analyzes incident history    │
-                              │   • Applies healing fixes        │
-                              │   • Logs all actions            │
-                              └─────────────────┬─────────────────┘
-                                                │
-                                                ▼
-                              ┌─────────────────────────────────┐
-                              │       NEXT.JS DASHBOARD          │
-                              │   http://localhost:3000          │
-                              │                                  │
-                              │   • Service status cards        │
-                              │   • Incident timeline           │
-                              │   • Resolution logs             │
-                              │   • Auto-refresh every 5s       │
-                              └─────────────────────────────────┘
+# Start all services (3 terminals)
+npm run start:all
+
+# Or manually:
+# Terminal 1: cd services/sms-service && npm run dev
+# Terminal 2: cd services/payment-service && npm run dev
+# Terminal 3: cd app && npm run dev
+
+# Open dashboard: http://localhost:3000
 ```
 
 ---
 
-## API Reference
-
-### Health Endpoints
+## Demo Commands
 
 ```bash
-# SMS Service
-curl http://localhost:3001/health
-# Response: { "status": "healthy" }
+# 1. Break a service (Chaos Monkey)
+npm run chaos
 
-# Payment Service
-curl http://localhost:3002/health
-# Response: { "status": "healthy" }
+# 2. Watch dashboard show CRITICAL
+#    Then invoke Claude Code to fix:
+#    "Fix the broken service. Check logs, identify bug, apply fix."
+
+# 3. Verify resolution (tests pass)
+npm test
 ```
 
-### Dashboard API
+---
 
-```bash
-# Get all services and their health status
-curl http://localhost:3000/api/services
+## Tech Stack
 
-# Get all incidents
-curl http://localhost:3000/api/incidents
-
-# Get agent status
-curl http://localhost:3000/api/agent-status
-```
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Frontend** | Next.js 16 | Dashboard with real-time monitoring |
+| **Styling** | Tailwind CSS v4 | Dark mode UI |
+| **Backend** | Node.js + Express | Microservices |
+| **Database** | SQLite | Persistent state via MCP Server |
+| **Testing** | Jest | Regression tests (8/8 passing) |
+| **Deployment** | Vercel | CI/CD auto-deploy from GitHub |
+| **AI** | Claude Code | Autonomous diagnosis and fixing |
 
 ---
 
 ## AI-Driven Development
 
-<div align="center">
+> **This entire project was built with zero manual coding.**
 
-### Built with Claude Code - Zero Manual Coding
-
-</div>
-
-Project Sentinel was **entirely built using Claude Code** (Anthropic's AI coding assistant). No code was written by hand.
-
-#### How It Was Built
-
-1. **Initial Setup**: Gave Claude Code the project requirements and watched it scaffold the entire project structure
-2. **Architecture Design**: Claude Code designed the microservices architecture with SQLite persistence
-3. **Implementation**: Every file - services, dashboard, chaos monkey, agent - was generated by AI
-4. **Testing**: Regression tests were written by the AI to ensure reliability
-5. **Iteration**: Asked for improvements, watched Claude Code refactor and enhance
-
-#### The Build Process
+Every file — services, dashboard, chaos monkey, sentinel agent, tests, docs — was generated by describing requirements to Claude Code. No code was copied from tutorials or written by hand.
 
 ```
-User: "Build an autonomous incident resolution system"
-    │
-    ▼
-Claude Code: "Let me create the full project structure..."
-    │
-    ├── app/ (Next.js dashboard)
-    ├── services/ (microservices)
-    ├── scripts/ (chaos monkey, agent)
-    ├── docs/ (SQLite, logs)
-    └── tests/ (regression suite)
-    │
-    ▼
-User: "All tests passing. Commit it."
+User: "Build an autonomous incident resolution system with:
+       - Next.js dashboard
+       - 2 microservices
+       - Chaos Monkey
+       - SQLite database
+       - Multi-agent AI debugging"
+
+Claude Code: *creates entire codebase*
+User: "Commit it."
 ```
 
-#### What Makes This Special
-
-- **Zero Boilerplate**: No copy-paste from tutorials
-- **Production-Ready**: Proper error handling, TypeScript types, tests
-- **Self-Healing**: The agent can fix issues autonomously
-- **Tested**: 8 regression tests ensure the system works correctly
+This is what modern software development looks like: prompt → code → tests → deploy.
 
 ---
 
-## Incident History
+## Database Note
 
-All incidents are tracked in SQLite and logged for analysis.
-
-### View Incidents
-
-```bash
-# Via API
-curl http://localhost:3000/api/incidents
-
-# Raw log file
-cat docs/incident-history.log
-```
-
-### Generated Reports
-
-| Report | Description |
-|--------|-------------|
-| `docs/agent-logs.txt` | Agent action summary with detection/resolution details |
-| `docs/post-mortem-2026-05-11.md` | Full post-mortem analysis with MTTD/MTTR metrics |
-| `docs/incident-export-*.json` | Raw incident data in JSON format |
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'feat: add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+The SQLite database (`docs/sentinel.db`) is local. Vercel hosts the **UI only** — it connects to a cloud SQLite instance or displays data passed from the agent. The MCP server enables Claude to query the database directly during incident resolution.
 
 ---
 
 ## License
 
-MIT License - See LICENSE file for details.
-
----
-
-<div align="center">
-
-**Built with Claude Code** | **Zero Manual Code** | **100% Autonomous**
-
-</div>
+MIT
