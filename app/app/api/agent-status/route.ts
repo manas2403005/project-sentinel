@@ -4,6 +4,11 @@ import path from 'path';
 
 const DB_PATH = path.join(process.cwd(), '..', 'docs', 'sentinel.db');
 
+interface Service {
+  id: string;
+  status: string;
+}
+
 interface AgentState {
   status: 'active' | 'healing' | 'idle';
   lastCheck: string;
@@ -29,13 +34,14 @@ export async function GET() {
     const agentState = getAgentState();
 
     // Check if any service needs healing
-    const needsHealing = services.some((s: any) =>
-      s.status === 'critical' || s.status === 'unreachable' || s.status === 'broken' || s.status === 'healing'
+    const servicesTyped = services as Service[];
+    const needsHealing = servicesTyped.some(
+      (s) => s.status === 'critical' || s.status === 'unreachable' || s.status === 'broken' || s.status === 'healing'
     );
 
     if (needsHealing) {
-      const healingService = services.find((s: any) =>
-        s.status === 'healing'
+      const healingService = servicesTyped.find(
+        (s) => s.status === 'healing'
       );
       if (healingService) {
         agentState.status = 'healing';
@@ -45,8 +51,8 @@ export async function GET() {
 
     return NextResponse.json({
       ...agentState,
-      servicesCount: (services as any[]).length,
-      healthyCount: (services as any[]).filter((s: any) => s.status === 'healthy').length,
+      servicesCount: servicesTyped.length,
+      healthyCount: servicesTyped.filter((s) => s.status === 'healthy').length,
     });
   } catch (error) {
     return NextResponse.json({
