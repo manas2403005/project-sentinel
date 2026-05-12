@@ -1,18 +1,29 @@
 import express from 'express';
 import Database from 'better-sqlite3';
 import path from 'path';
-
-// Chaos Monkey: Crash loop bug - throws unhandled error
-throw new Error('CHAOS MONKEY: Service crashed on startup!');
-
-// Chaos Monkey: Crash loop bug - throws unhandled error
-throw new Error('CHAOS MONKEY: Service crashed on startup!');
+import fs from 'fs';
 
 const app = express();
 const PORT = 3001;
 const SERVICE_ID = 'sms-service';
 
 const DB_PATH = path.join(__dirname, '..', '..', '..', 'docs', 'sentinel.db');
+const LOG_DIR = path.join(__dirname, 'logs');
+const ERROR_LOG_PATH = path.join(LOG_DIR, 'error.log');
+
+function ensureLogDir(): void {
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+  }
+}
+
+function logError(message: string, error?: unknown): void {
+  ensureLogDir();
+  const timestamp = new Date().toISOString();
+  const errorDetail = error instanceof Error ? `${error.message}\n${error.stack}` : String(error || 'Unknown error');
+  const logEntry = `[${timestamp}] ERROR: ${message}${error ? `\n${errorDetail}` : ''}\n`;
+  fs.appendFileSync(ERROR_LOG_PATH, logEntry);
+}
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -54,8 +65,14 @@ function reportHealth(): void {
 }
 
 app.get('/health', (req, res) => {
-  reportHealth();
-  res.json({ status: 'healthy' });
+  try {
+    reportHealth();
+    res.json({ status: 'healthy' });
+  } catch (error) {
+    logError('Health check failed', error);
+    updateHealthStatus('unhealthy');
+    res.status(503).json({ status: 'unhealthy', error: 'Health check failed' });
+  }
 });
 
 initializeDatabase();
