@@ -42,5 +42,13 @@ describe('payment-service', () => {
       const output = String(result.stdout) + String(result.stderr);
       expect(output).not.toContain('error TS');
     }, 30000);
+
+    test('No crash-loop bug in source - no throw statements with CHAOS MONKEY', () => {
+      const indexPath = path.join(SERVICE_DIR, 'index.ts');
+      const content = fs.readFileSync(indexPath, 'utf-8');
+
+      expect(content).not.toContain('throw new Error(');
+      expect(content).not.toContain('CHAOS MONKEY');
+    });
   });
 });

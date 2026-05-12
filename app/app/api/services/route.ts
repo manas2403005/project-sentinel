@@ -29,7 +29,7 @@ export async function GET() {
     initializeDatabase(db);
     const services = db.prepare('SELECT * FROM services').all() as Array<{id: string; name: string; status: string; last_checked: string; incident_count: number}>;
 
-    // Check each service for active incidents and override status to critical if needed
+    // Check for active incidents and override status to critical
     for (const service of services) {
       const activeIncident = db.prepare(
         "SELECT id FROM incidents WHERE service_name = ? AND status = 'active'"
@@ -45,5 +45,30 @@ export async function GET() {
   } catch (error) {
     console.error('Failed to fetch services:', error);
     return NextResponse.json({ error: 'Failed to fetch services' }, { status: 500 });
+  }
+}
+
+export async function PUT() {
+  try {
+    const db = new Database(DB_PATH);
+    initializeDatabase(db);
+
+    const body = await new Request('http://localhost').json().catch(() => ({}));
+    const { serviceId, status } = body as { serviceId?: string; status?: string };
+
+    if (serviceId && status) {
+      db.prepare(
+        'UPDATE services SET status = ?, last_checked = ? WHERE id = ?'
+      ).run(status, new Date().toISOString(), serviceId);
+
+      db.close();
+      return NextResponse.json({ success: true, serviceId, status });
+    }
+
+    db.close();
+    return NextResponse.json({ error: 'Missing serviceId or status' }, { status: 400 });
+  } catch (error) {
+    console.error('Failed to update service:', error);
+    return NextResponse.json({ error: 'Failed to update service' }, { status: 500 });
   }
 }

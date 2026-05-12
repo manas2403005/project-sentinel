@@ -160,9 +160,7 @@ function markServiceCritical(serviceId: string, bugType: string, description: st
 
 function main(): void {
   const service = SERVICES[Math.floor(Math.random() * SERVICES.length)];
-  // TEMP: Always use crash-loop for demo recording
-  const bugType = 'crash-loop';
-  // const bugType = BUG_TYPES[Math.floor(Math.random() * BUG_TYPES.length)];
+  const bugType = BUG_TYPES[Math.floor(Math.random() * BUG_TYPES.length)];
 
   const servicePath = path.join(__dirname, '..', 'services', service);
   const bug = bugs[bugType];

@@ -279,6 +279,22 @@ async function fixService(serviceId: string): Promise<boolean> {
       updateServiceStatus(serviceId, 'healthy');
       resolveIncident(serviceId);
 
+      // Notify dashboard
+      try {
+        await fetch('http://localhost:3000/api/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serviceId,
+            bugType: 'crash-loop',
+            fixDescription: issues.join(', ')
+          })
+        });
+        console.log(`📡 Dashboard notified of fix`);
+      } catch (e) {
+        console.log(`📡 Dashboard notification failed (may be starting up)`);
+      }
+
       agentState.lastHeal = new Date().toISOString();
       agentState.status = 'active';
       agentState.currentFix = null;
