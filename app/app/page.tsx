@@ -140,14 +140,13 @@ export default function Dashboard() {
   const [agentState, setAgentState] = useState<AgentState>({ status: 'idle', lastCheck: '', lastHeal: null, currentFix: null });
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [mounted, setMounted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
 
   const isHealing = agentState.status === 'healing';
 
   useEffect(() => {
     async function loadData() {
       try {
-        setError(null);
         const [servicesRes, incidentsRes, agentRes] = await Promise.all([
           fetch('/api/services'),
           fetch('/api/incidents'),
@@ -157,6 +156,10 @@ export default function Dashboard() {
         if (!servicesRes.ok || !incidentsRes.ok || !agentRes.ok) {
           throw new Error('API request failed');
         }
+
+        // Check for demo mode
+        const isDemo = servicesRes.headers.get('x-demo-mode') === 'true';
+        setDemoMode(isDemo);
 
         const [servicesData, incidentsData, agentData] = await Promise.all([
           servicesRes.json(),
@@ -172,7 +175,7 @@ export default function Dashboard() {
         setMounted(true);
       } catch (error) {
         console.error('Failed to load data:', error);
-        setError('Failed to connect to services. Is the database running?');
+        setDemoMode(true);
         setMounted(true);
       }
     }
@@ -188,14 +191,6 @@ export default function Dashboard() {
         <h1 className="title">🤖 Project Sentinel Dashboard</h1>
         {mounted && <span className="last-updated">Last updated: {lastUpdated.toLocaleTimeString()}</span>}
       </div>
-
-      {error && (
-        <div className="panel" style={{ backgroundColor: '#f8514933', border: '1px solid #f85149', marginBottom: '20px' }}>
-          <div style={{ color: '#f85149', padding: '10px' }}>
-            ⚠️ {error}
-          </div>
-        </div>
-      )}
 
       <div className="agent-status-bar">
         <div className="agent-status">
@@ -233,6 +228,12 @@ export default function Dashboard() {
       </div>
 
       <AllIncidentsPanel incidentsData={incidents} />
+
+      {demoMode && (
+        <div style={{ textAlign: 'center', padding: '20px', color: '#8b949e', fontSize: '12px' }}>
+          Demo mode - local DB not available
+        </div>
+      )}
     </div>
   );
 }
