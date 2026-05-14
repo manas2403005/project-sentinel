@@ -207,6 +207,15 @@ This is what modern software development looks like: prompt → code → tests �
 
 The SQLite database (`docs/sentinel.db`) is local. Vercel hosts the **UI only** — it connects to a cloud SQLite instance or displays data passed from the agent. The MCP server enables Claude to query the database directly during incident resolution.
 
+### Demo Mode
+
+When the SQLite database is not available (production/deployed environment), the dashboard automatically switches to **Demo Mode** and displays mock data:
+- Services: sms-service and payment-service show as "healthy"
+- Incidents: 3 sample resolved incidents from the current day
+- Sentinel Agent: "ACTIVE" status
+
+A subtle "Demo mode - local DB not available" note appears in the footer when Demo Mode is active. This ensures the dashboard always shows a working UI even without a local database.
+
 ---
 
 ## License
